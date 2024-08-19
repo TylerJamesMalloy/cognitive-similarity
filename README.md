@@ -1,7 +1,4 @@
----
-header-includes:
-  - \usepackage{algorithm2e}
----
+# Code for submission to Conference on Natural Language Learning 2024 (CoNLL) paper "Leveraging a Cognitive Model to Measure Subjective Similarity of Human and GPT-4 Written Content"
 
 # Database 
 ## Combined (Data/Combined.csv, Data/Combined.pkl)
@@ -39,13 +36,11 @@ Whether the annotation was correct or incorrect as determined by the original em
 
 ## Emails (Data/Emails.csv, Data/Emails.pkl)
 
-# Code for submission to Emperical Methods in Natural Language Processing 2024 paper "Leveraging a Cognitive Model to Measure Subjective Similarity of Human and GPT-4 Written Content"
-
 ## Instance Based Learning Cognitive Model 
 
 ## Instance-Based Individualized Similarity 
-\begin{algorithm}[t!]
-\caption{Pseudo Code of Instance-Based Learning Cosine Similarity Update} 
+### Pseudo Code of Instance-Based Learning Cosine Similarity Update
+
 \label{alg:IBIS} 
 \SetKwInput{KwInput}{Input}
 \SetKwFor{ExecutionLoop}{Execution Loop}{}{end}
