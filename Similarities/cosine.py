@@ -3,7 +3,7 @@ import numpy as np
 from .similarity import Similarity
 
 class Cosine(Similarity):
-    def __init__(self, name="Human", categories=[], args=None, m=None, w=None, n=False, p=False, **kwargs):
+    def __init__(self, name="Human", categories=[], args=None, m=None, w=None, n=False, p=False, weighted=False, pruned=False, **kwargs):
         super().__init__(name, categories, args)
         self.annotations = None 
         self.categories = categories
@@ -15,6 +15,9 @@ class Cosine(Similarity):
         self._w = w 
         self._n = n 
         self._p = p
+
+        self.weighted = weighted
+        self.pruned = pruned
         
          
     def set_m(self, m):
@@ -31,6 +34,15 @@ class Cosine(Similarity):
         if(self.categories is None):
             raise Exception("Document categories must be set before setting the documents.")  
         else:
+            # Calculate eights based on the 
+            if(self.weighted): 
+                print("In Weighted")
+                assert(False)
+            
+            if(self.pruned): 
+                print("In pruned")
+                assert(False)
+
             for category in self.categories:
                 categoryAnnotations = self.documents[self.documents[self.column] == category]
                 means = categoryAnnotations['Embedding'].to_list()
