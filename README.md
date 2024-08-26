@@ -1,69 +1,253 @@
-# Code for submission to Conference on Natural Language Learning 2024 (CoNLL) paper "Leveraging a Cognitive Model to Measure Subjective Similarity of Human and GPT-4 Written Content"
+# Codebase for submission to Conference on Natural Language Learning (CoNLL) 2024 paper "Leveraging a Cognitive Model to Measure Subjective Similarity of Human and GPT-4 Written Content"
 
-# Database 
-## Combined (Data/Combined.csv, Data/Combined.pkl)
-The combined file adds together the Annotations and Demographics columns listed below. 
+# Similarities Folder (./Similarities)
+This folder contains code for the 4 files required to replicate the 6 similarity metrics discussed in the paper. Additionally there is a similarity.py file containing the superclass of all similarity metrics.  The human subjective similarity, which all similarity metrics are compared against, is in the human.py file, results shown in figure 1. The cosine, weighted cosine, and pruned cosine files are all contained in the cosine.py file, results shown in figures 2-4. The semantic similarity measure is contained in the semantic.py file, results shown in figure 5. Our proposed IBIS similarity metric is in the ibis.py file, results shown in figure 6. All metrics are also displayed in Figure 7. 
 
-## Annotations (Data/Annovations.csv, Data/Annovations.pkl)
+## Human 
+
+## Cosine 
+
+## IBIS 
+
+## Semantic
+
+
+# Data Folder (./Data)
+## Annotations 
+
 ### UserId
-The Id of the user, a randomly generated number to correspond to the same participant in the Demographics.csv and Demographics.pkl files.
+
+The internal UserId of the participant, this corresponds to the UserId in other data files. 
+
 ### Experiment
-The number of the experiment (1 or 2), the first experiment altered email author and style in a 2x2 design, the second experiment altered the training feedback and email selection in a 2x2 design, with an additional ablation condition. 
+
+Experiment 1 or 2, which differed by the type of emails shown to participants and the type of feedback they recieved. 
+
 ### ExperimentCondition
-The condition of the experiment. For conditions in experiment 1 the type of author that wrote the email and the type of the email style are used to name the conditions. For conditions in experiment 2 the method of selecting emails (IBL or Random) and the feedback style (Points or Written) is used to name the condition. The ablation condition removes IBL information from the LLM prompts for feedback and is called Ablation Condition. The options are ['Human Written GPT-4 Styled' 'GPT-4 Written GPT-4 Styled' 'GPT-4 Written Plain Styled' 'Human Written Plain Styled' 'IBL Emails Points Feedback' 'IBL Emails Written Feedback' 'Random Emails Written Feedback' 'Ablation Condition']
+
+The condition of the experiment which in experiment 1 differed by the author and style of the email, in experiment 2 it differed by the style of feedback and method for selecting emails.
+
 ### EmailId
-The Id of the email shown to the participant on this trial, to correspond to the email in the Emails.csv and Emails.pkl files. 
-### EmailType
-The ground truth annotations determined by cybersecurity experts for the original dataset of base emails, which are used to produce 3 additional sets of emails (see Emails section for more details). Options for annotation categories are phishing (dangerous) or ham (safe).
-### PhaseValue
-The phase of the current trial values are (pre-training, training, or post training). There were 10 pre-training trials with no feedback, 40 trials with feedback, then 10 trials with no feedback.
+
+The Id of the email, to correspond to the Emails.csv file. 
+
 ### PhaseTrial
-The within phase trial number (1-10 for pre-training, 1-40 for training, 1-10 for post-training). 
-### ExperimentTrial 
-The within experiment trial number (1-60).
+
+ The within phase index of the trial, ranging from 0-9 in the pre and post training phases and 0-39 in the training phase. 
+
 ### Decision
-The categorization annotation made by the participant (true or false), true indicates that the email was annotated by the participant to be a phishing email (dangerous) and false indicates that the email was annotated by the participant to be a ham email (safe).
+
+true represents the participant annotating the email as being a phishing email, fals represents the non-phihsing annotation. 
+
+### EmailType
+
+The true underlying email type, either phishing or non-phishing, as determined by the original cybersecurity experts that wrote the base emails. 
+
+### PhaseValue
+
+The phase of the experiment, either pretraining, training, or posttraining, feedback on annotation accuracy was only shown in the training phase.
+
 ### Confidence
-The categorization annotation confidence rating made by the participant (1-5).
+
+The stated confidence of the annotation by the participant, ranging from 0-4. 
+
 ### EmailAction
-The action selected by the participant
+
+The selected action that the participant would take upon recieving the email.
+
 ### ReactionTime
-The time in milliseconds that the participant took to annotate the document. 
+
+The reaction time of the annotation in miliseconds.
+
 ### Correct
-Whether the annotation was correct or incorrect as determined by the original email document categorization given by a conosensus of three cybersecruity experts. 
 
-## Conversations (Data/Conversations.csv, Data/Conversations.pkl)
+1 indicates that the annotation matches the true underlying email type, and 0 indicates that it does not. 
 
-## Emails (Data/Emails.csv, Data/Emails.pkl)
 
-## Instance Based Learning Cognitive Model 
+## Demographics 
 
-## Instance-Based Individualized Similarity 
-### Pseudo Code of Instance-Based Learning Cosine Similarity Update
+### UserId
 
-\label{alg:IBIS} 
-\SetKwInput{KwInput}{Input}
-\SetKwFor{ExecutionLoop}{Execution Loop}{}{end}
-\SetKwFor{ExplorationLoop}{Exploration Loop}{do}{end}
-\DontPrintSemicolon
+Internal Id for user, corresponds to other data files.
 
-\KwInput{default utility $u_0$, a memory dictionary $\mathcal M= \{\}$, global counter $t = 1$, step limit $L$. Dataset of stimuli $D$}
-\Repeat{task stopping condition}{  
-Initialize a counter (i.e., step) $l=0$ and observe state $s_l$
+### Age
 
-\While{$s_l$ is not terminal and $l<L$}{
-   \ExecutionLoop{}{
-  \ExplorationLoop{$k\in K$}{
-   Compute $A_i(t)$ by Eq: \eqref{eq:activation}\; \label{algo:activation}
-   Compute  $P_i(t)$ by Eq: \eqref{eq:retrieval}\;\label{algo:retrieval}
-    Compute $V_k(t)$ by Eq: \eqref{eq:blending}\;  \label{algo:blending}
-}
-Update similarity by Eq: \eqref{eq:IBIS} using each data point in $D$\; \label{algo:IBIS}
-Predict student action $a$ by $k_l\in\arg\max_{k\in K}V_k(t)$
-}
-   Observe student action $a$, observe $s_{l+1}$, and student feedback outcome $u_{l+1}$\;
-   Store $t$ instance in $\mathcal M$\;\label{algo:store}
-   }
- }
-\end{algorithm}
+Participant age in years.
 
+### Gender
+
+Male, Female, Non-Binary
+
+### Education
+DD: Doctoral Degree, MD: Master's Degree, BD: Bachelor's Degree, HS: High School
+
+### Country
+
+Country of residence 
+
+### Victim
+
+Whether the participant has been a victim of phishing emails and the number of times 
+
+### Chatbot
+
+Whether the participant has been experience with chatbots
+
+### Q0
+What type of language do phishing emails often use to create a sense of panic
+    0: Urgent language. <---- Correct Response
+    1: Friendly language.
+    2: Rude language.
+    3: Mean language.
+    
+### Q1
+What might a phishing email request of you to compromise your Identity?
+    0: Personal Information like your favorite color.
+    1: Sensitive information like credit card numbers. <---- Correct Response
+    2: Sensitive information like your celebrity crush.
+    3: Irrelevant information like your dog's name
+
+### Q2
+What types of actions might phishing emails request from you that would lead to malware being installed on your computer
+    0: Clicking links only.
+    1: Downloading attachments only.
+    2: Replying with your computer's information only.
+    3: All of the above. <---- Correct Response
+### Q3
+How might a phishing email try to ensure that you are susceptible to a phishing attempt?
+    0: Being overly friendly.
+    1: Calling you a generic title.
+    2: By using poor grammar. <---- Correct Response
+    3: Saying you won the lottery. 
+
+### Q4
+How might a phishing email attempt to convince you that it was sent from a legitimate source?
+    0: Using an email from a website that you have never heard of.
+    1: Sending the email from a website with a famous company name.
+    2: Adding a link to a real website in the text of the email. <---- Correct Response
+    3: Using another website name that is different from the one sending the email.
+
+### Q5
+How might a phishing email convince you to click on a fake link?
+    0: Adding a lot of random numbers and letters into the link. <---- Correct Response
+    1: Change the text of the link, which can be checked by hovering over it.
+    2: Change the color of the link to make it look like you have clicked it before.
+    3: Keeping the link short so it looks legitimate.
+
+### PQ1,
+ Of the phishing emails you've encountered, what percentage do you think were generated by artificial intelligence models?
+  <option value="phishingWriting100p">100% of the phishing emails I read were written by an Artificial Intelligence model.</option>
+  <option value="phishingWriting75p"> 75% of the phishing emails I read were written by an Artificial Intelligence model.</option>
+  <option value="phishingWriting50p"> 50% of the phishing emails I read were written by an Artificial Intelligence model.</option>
+  <option value="phishingWriting25p"> 25% of the phishing emails I read were written by an Artificial Intelligence model.</option>
+  <option value="phishingWriting0p">  0% of the phishing emails I read were written by an Artificial Intelligence model.</option>
+
+### PQ2
+Of the ham (i.e non-phishing) emails you've encountered, what percentage do you think were generated by artificial intelligence models?</label>
+  <option disabled selected>Please select the percentage that best fits your experience in the study.</option>
+  <option value="hamWriting100p">100% of the ham emails I read were written by an Artificial Intelligence model.</option>
+  <option value="hamWriting75p"> 75% of the ham emails I read were written by an Artificial Intelligence model.</option>
+  <option value="hamWriting50p"> 50% of the ham emails I read were written by an Artificial Intelligence model.</option>
+  <option value="hamWriting25p"> 25% of the ham emails I read were written by an Artificial Intelligence model.</option>
+  <option value="hamWriting0p">  0% of the ham emails I read were written by an Artificial Intelligence model.</option>
+
+
+
+### PQ3
+
+Of the phishing emails you've encountered, what percentage do you think were styled (i.e the appearance  and format) by artificial intelligence models?</label>
+  <option value="phishingStyling100p">100% of the phishing emails I read were styled by an Artificial Intelligence model.</option>
+  <option value="phishingStyling75p"> 75% of the phishing emails I read were styled by an Artificial Intelligence model.</option>
+  <option value="phishingStyling50p"> 50% of the phishing emails I read were styled by an Artificial Intelligence model.</option>
+  <option value="phishingStyling25p"> 25% of the phishing emails I read were styled by an Artificial Intelligence model.</option>
+  <option value="phishingStyling0p">  0% of the phishing emails I read were styled by an Artificial Intelligence model.</option>
+    
+
+
+### PQ4
+Of the ham (i.e non-phishing) emails you've encountered, what percentage do you think were styled (i.e the appearance  and format) by artificial intelligence models?</label>
+  <option value="hamStyling100p">100% of the ham emails I read were styled by an Artificial Intelligence model.</option>
+  <option value="hamStyling75p"> 75% of the ham emails I read were styled by an Artificial Intelligence model.</option>
+  <option value="hamStyling50p"> 50% of the ham emails I read were styled by an Artificial Intelligence model.</option>
+  <option value="hamStyling25p"> 25% of the ham emails I read were styled by an Artificial Intelligence model.</option>
+  <option value="hamStyling0p">  0% of the ham emails I read were styled by an Artificial Intelligence model.</option>
+
+### PQ5
+
+Open response on the method of annotation of the participant.
+
+## Emails 
+
+### EmailId
+
+The ID of the email, corresponds to the EmailId column in the annotations data file. 
+
+### BaseEmailID
+
+The ID of the email that each email is based on, there are 4 versions of each original email. 
+
+### Author
+
+GPT or Human for the writer of the main body of the email. 
+
+### Style
+
+GPT or plaintext for the style of the email as it was presented. 
+
+### Type
+
+phishing or ham as determined by cybersecurirty experts of the base email 
+
+### Sender Style
+Description of the email sender, used in the prompt to GPT to generate an email 'in the style of' the sender 
+
+### Sender
+The email of the sender.
+
+### Subject
+
+The subject line of the email.
+
+### Sender Mismatch
+
+Whether there is a mismatch between the sender of the email and the email body. 
+
+### Request Credentials
+
+Whether the email requests credentials from the recipent. 
+
+### Subject Suspicious
+
+Whether the subject of the email is suspicious. 
+
+### Urgent
+
+Whether the tone of the email is urgent. 
+
+### Offer
+
+Whether the email makes an offer. 
+
+### Link Mismatch
+
+Whether the link shown in the email is mismatched from the text of the link. 
+
+### Prompt
+
+The prompt to GPT used to generate the email.
+
+### Body
+
+The main body of the email shown to participants. 
+
+## Messages 
+
+All column values are the same for the trial of the Annotations file that these messages were sent and recieved in appart from the following. 
+
+### MessageNum
+
+The number of the message sent between the user and AI chatbot teacher. 
+
+### Message
+
+The content of the message, formatted as a GPT prompt for messages sent to the teacher. 

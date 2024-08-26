@@ -1,18 +1,21 @@
 class Similarity():
     def __init__(
-            self,
-            name="Similarity Superclass",
-            categories=None,
+            self, name, categories, args
     ):
-        self.name = name 
+        self.name       = name 
         self.categories = categories
+        self.args       = args 
+        self.column     = args.typeColumn
     
 
-    def similarity(self,u,v):
+    def similarity(self,u):
         return 0
     
+    def set_documents(self, documents):
+        self.documents = documents 
+    
     def set_annotations(self, annotations):
-        return 
+        self.annotations = annotations
 
     def set_participant(self, participant):
-        return 
+        self.participant = participant 

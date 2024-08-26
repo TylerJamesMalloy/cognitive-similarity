@@ -3,11 +3,11 @@ import numpy as np
 from .similarity import Similarity
 
 class Cosine(Similarity):
-    def __init__(self, name="Similarity", m=None, w=None, n=False, p=False, args=None, **kwargs):
-        super().__init__(name)
+    def __init__(self, name="Human", categories=[], args=None, m=None, w=None, n=False, p=False, **kwargs):
+        super().__init__(name, categories, args)
         self.annotations = None 
-        self.categories = None
-        self.column = None 
+        self.categories = categories
+        self.column = args.typeColumn 
         self.categoryMeans = {}
         
         self.args=args 
@@ -25,13 +25,9 @@ class Cosine(Similarity):
         self._n = n
     def set_p(self, p):
         self._p = p
-    
-    def set_categories(self, categories, column):
-        self.categories = categories
-        self.column     = column
 
     def set_documents(self, documents):
-        self.documents = documents
+        super().set_documents(documents)
         if(self.categories is None):
             raise Exception("Document categories must be set before setting the documents.")  
         else:
@@ -44,8 +40,7 @@ class Cosine(Similarity):
                     means = np.mean(means, axis=0) # could make the axis an args option but it should be 0 typically 
                 self.categoryMeans[category] = means
     
-    def set_annotations(self, annotations):
-        self.annotations = annotations
+    
     
     def similarity(self, u, categories=None):
         """

@@ -3,7 +3,7 @@ import argparse
 import pandas as pd 
 import numpy as np 
 
-from Similarities import Cosine
+from Similarities import Cosine, Human
 
 class Embedding():
     def __init__(self, name) -> None:
@@ -46,7 +46,7 @@ if __name__ == '__main__':
 
     # This dataframe will save the information regarding the similarity metric entered applied onto documents. 
     categories = args.annotationCategories.split(",")
-    columns = ["Metric", "Type"]
+    columns = ["Similarity Metric", "Document Id", "Document Type", "Human Annotation"]
     for category in categories: 
         columns.append(category)
     
@@ -73,19 +73,19 @@ if __name__ == '__main__':
     if("Embedding" not in ddf.columns):
         raise Exception("Calculation of embeddings from documents is not yet supported, please use a document file with embeddings.")
 
-    cosine = Cosine(name="Cosine", args=args)
-    cosine.set_categories(categories=categories, column=args.typeColumn) # Should this be done with the args value passed to Similarity objects?
-    cosine.set_documents(ddf)
-    metrics = [cosine]
+    cosine = Cosine(name="Cosine", categories=categories, args=args)
+    human = Human(name="Human", categories=categories, args=args)
+    metrics = [human, cosine]
 
     for metric in metrics:                                          # Iterrate through all similarity metrics selected
+        metric.set_documents(ddf)                                   # Send all documents to the similarity metric object. 
         metric.set_annotations(adf)                                 # Send annotation information to the similarity metric object. 
         for participant in adf[args.participantColumn].unique():    # Iterrate through the participants in the annotation dataset.
             pdf = adf[adf[args.participantColumn] == participant]   # Select only the annotations from the current participant.
             metric.set_participant(pdf)                             # Send individual annotations to the similarity metric object.
-            for idx, column in pdf.iterrows():                      # Iterate through rows of the participant annotations.
+            for idx, annotation in pdf.iterrows():                  # Iterate through rows of the participant annotations.
                 try:
-                    documentId = column[args.idColumn]              # Get the Id of the dicument in the current annotation. 
+                    documentId = annotation[args.idColumn]          # Get the Id of the dicument in the current annotation. 
                     docCol = ddf[ddf[args.idColumn] == documentId]  # Get the document column with the Id of the current annotation.
                     doc = docCol[args.documentColumn].item()        # Get the document from that document column.
                     docType = docCol[args.typeColumn].item()        # Get the type of the document in the current annotation
@@ -98,10 +98,17 @@ if __name__ == '__main__':
                 except Exception as e:
                     print("Unable to process annotation with index: ", idx, " skipping and continuing")
                     continue
+                
+                decision = "phishing"
+                if(annotation['Decision'] == "false"): #edit to be more general 
+                    decision = "ham"
 
                 o = metric.similarity(doc)
-                o["Metric"] = metric.name
-                o["Type"] = docType
+                if(o is None): continue 
+                o["Similarity Metric"] = metric.name
+                o["Document Id"] = annotation[args.idColumn]
+                o["Document Type"] = docType
+                o["Human Annotation"] = decision
                 o = pd.DataFrame([o], columns=columns)
                 out = pd.concat([out, o], ignore_index=True)
     
