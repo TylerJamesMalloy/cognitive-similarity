@@ -1,7 +1,6 @@
-# Code source: Tom Dupré la Tour
-# Adapted from plot_classifier_comparison by Gaël Varoquaux and Andreas Müller
-#
-# License: BSD 3 clause
+# Code source: Tyler Malloy
+# Adapted from Tom Dupré la Tour which was adapted from plot_classifier_comparison by Gaël Varoquaux and Andreas Müller
+# Original License: BSD 3 clause
 
 import matplotlib.pyplot as plt
 import numpy as np
