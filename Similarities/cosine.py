@@ -58,15 +58,6 @@ class Cosine(Similarity):
         if(self.categories is None):
             raise Exception("Document categories must be set before setting the documents.")  
         else:
-            # Calculate eights based on the 
-            if(self.weighted): 
-                print("In Weighted")
-                assert(False)
-            
-            if(self.pruned): 
-                print("In pruned")
-                assert(False)
-
             for category in self.categories:
                 categoryAnnotations = self.documents[self.documents[self.column] == category]
                 means = categoryAnnotations['Embedding'].to_list()
@@ -75,18 +66,57 @@ class Cosine(Similarity):
                 if(isinstance(means, np.ndarray)):
                     means = np.mean(means, axis=0) # could make the axis an args option but it should be 0 typically 
                 self.categoryMeans[category] = means
+            
+    def set_annotations(self, annotations):
+        super().set_annotations(annotations)
+
+        # Calculate weights based on the difference between category mean embedding weights. 
+        if(self.weighted): 
+            self._n = 0.5
+            category_embedding_means = []
+            for category in self.categories:
+                category_embedding = []
+                for id in annotations[annotations[self.args.annotationColumn] == category][self.args.idColumn].to_list():
+                    if(len(self.documents[self.documents[self.args.idColumn] == id]['Embedding'].to_list()) == 0): continue 
+                    embedding = self.documents[self.documents[self.args.idColumn] == id]['Embedding'].to_list()[0]
+                    embedding = [float(x) for x in embedding]
+                    category_embedding.append(embedding)
+                category_embedding = np.array(category_embedding)
+                category_embedding = np.mean(category_embedding, axis=0)
+                category_embedding_means.append(category_embedding.tolist())
+            
+            category_embedding_means = np.array(category_embedding_means)
+            self._w = (category_embedding_means.var(axis=0) ** 2)
+            #self._w = self._w  / np.sum(self._w)
+        
+        if(self.pruned): 
+            self._n = 0.5
+            category_embedding_means = []
+            for category in self.categories:
+                category_embedding = []
+                for id in annotations[annotations[self.args.annotationColumn] == category][self.args.idColumn].to_list():
+                    if(len(self.documents[self.documents[self.args.idColumn] == id]['Embedding'].to_list()) == 0): continue 
+                    embedding = self.documents[self.documents[self.args.idColumn] == id]['Embedding'].to_list()[0]
+                    embedding = [float(x) for x in embedding]
+                    category_embedding.append(embedding)
+                category_embedding = np.array(category_embedding)
+                category_embedding = np.mean(category_embedding, axis=0)
+                category_embedding_means.append(category_embedding.tolist())
+            
+            category_embedding_means = np.array(category_embedding_means)
+            self._w = category_embedding_means.var(axis=0)
+            threshold = np.mean(self._w) # could make this a command line arugment 
+            self._w[self._w < threshold] = 0
+            self._w = self._w / np.sum(self._w)
     
-    
-    
-    def similarity(self, u, categories=None):
+    def similarity(self, u):
         """
         Calculate the similarity of the document u to each category, or to a specific subset if categories is not None
         """
         categorySimilarities = {}
         for category, mean in zip(self.categoryMeans.keys(), self.categoryMeans.values()):
             if(self._w is not None):
-                if(self._n):
-                    w = self._w / np.sum(w)
+                    w = self._w 
                     vw = mean * w
                     uw = u * w
             else:
@@ -103,34 +133,11 @@ class Cosine(Similarity):
                     sim = 1
                 else:
                     sim = 0
-            sim = float(sim)
-
+            if(self._n is not None):
+                sim = float(sim - self._n)
+            else:
+                sim = float(sim)
+                
             categorySimilarities[category] = sim
 
         return categorySimilarities 
-
-
-"""
-def similarity(self, u, v, m=None, w=None, norm=True):
-        if(w is not None):
-            if(norm):
-                w = w / np.sum(w)
-                vw = v * w
-                uw = u * w
-            else:
-                vw = v
-                uw = u 
-            uv = np.dot(u, vw)
-            uu = np.dot(u, uw)
-            vv = np.dot(v, vw)
-            dist = 1.0 - uv / math.sqrt(uu * vv)
-            sim = 1 - (np.clip(dist, 0.0, 2.0)  / 2)
-            if(m is not None):
-                if(sim < m):
-                    sim = 1
-                else:
-                    sim = 0
-        return sim 
-"""
-        
-    

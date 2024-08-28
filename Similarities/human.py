@@ -35,19 +35,33 @@ class Human(Similarity):
     on the annotation confidence and reaction time. If these are not present then 
     this similarity will default to include whatever information is available. 
     """
-    def similarity(self, u, categories=None):
+    def similarity(self, u):
+        if(len(self.documents[self.documents["Embedding"] == tuple(u)]) == 0): return None 
         doc = self.documents[self.documents["Embedding"] == tuple(u)].iloc[0]
         docId = doc[self.args.idColumn].item()
-        docAnnotations = self.participant[self.participant[self.args.idColumn] == docId]
+        docAnnotations = self.annotations[self.annotations[self.args.idColumn] == docId]
         
-        for idx, docAnnotation in docAnnotations.iterrows():
-            similarity = 1
-            if('Confidence' in docAnnotations.columns):
-                similarity *= docAnnotation['Confidence'] / 5
-            if('ReactionTime' in docAnnotations.columns):
-                similarity *= np.abs((docAnnotation['ReactionTime'] - self.participant['ReactionTime'].max()) /  self.participant['ReactionTime'].max())
+        similarities = {}
+        for category in self.categories:
+            catAnnotations = docAnnotations[docAnnotations[self.args.annotationColumn] == category]
+            if(len(catAnnotations) == 0):
+                similarities[category] = None
+                continue 
 
-            if(docAnnotation['Decision'] == 'false'): # make this more general 
-                return {'ham':similarity, 'phishing':1-similarity}
-            else:
-                return {'phishing':similarity, 'ham':1-similarity}
+            similarity = len(catAnnotations) / len(docAnnotations)
+            if('Confidence' in catAnnotations.columns):
+                similarity *= np.abs(catAnnotations['Confidence'].mean() / self.annotations['Confidence'].max())
+            if('ReactionTime' in catAnnotations.columns):
+                similarity *= np.abs((catAnnotations['ReactionTime'].mean() - self.annotations['ReactionTime'].max()) /  self.annotations['ReactionTime'].max())
+            
+            similarities[category] = float(similarity)
+
+        if(len(self.categories) == 2): # If there are exactly 2 categories we can replace no value similarities with the inverse of the other category similarity. 
+            for category_index, category in enumerate(self.categories):
+                if(similarities[category] is None):
+                    other_category = 1 if category_index == 0 else 0
+                    if(similarities[self.categories[other_category]] is None): 
+                        return None # if both are none we failed to calculate similarity 
+                    similarities[category] = float(0.75 - np.clip(similarities[self.categories[other_category]], a_min=0, a_max=0.75) )
+
+        return similarities

@@ -28,9 +28,9 @@ from scipy import optimize
 import math
 
 
-emails      = pd.read_pickle("../data/Emails.pkl")
-embeddings      = pd.read_pickle("../data/Embeddings.pkl")
-decisions   = pd.read_pickle("../data/Annotations.pkl")
+emails      = pd.read_pickle("../Database/Emails.pkl")
+embeddings      = pd.read_pickle("../Database/Embeddings.pkl")
+decisions   = pd.read_pickle("../Database/Annotations.pkl")
 
 emails['Embedding'] = embeddings['Embedding']
 

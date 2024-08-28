@@ -35,9 +35,32 @@ class Semantic(Similarity):
     on the annotation confidence and reaction time. If these are not present then 
     this similarity will default to include whatever information is available. 
     """
-    def similarity(self, u, categories=None):
+    def set_annotations(self, annotations):
+        super().set_annotations(annotations)
+
+        # Calculate weights based on the difference between category mean embedding weights.  
+        self._n = 0.5
+        category_embedding_means = []
+        for category in self.categories:
+            category_embedding = []
+            for id in annotations[annotations[self.args.annotationColumn] == category][self.args.idColumn].to_list():
+                if(len(self.documents[self.documents[self.args.idColumn] == id]['Embedding'].to_list()) == 0): continue 
+                embedding = self.documents[self.documents[self.args.idColumn] == id]['Embedding'].to_list()[0]
+                embedding = [float(x) for x in embedding]
+                category_embedding.append(embedding)
+            category_embedding = np.array(category_embedding)
+            category_embedding = np.mean(category_embedding, axis=0)
+            category_embedding_means.append(category_embedding.tolist())
+        
+        category_embedding_means = np.array(category_embedding_means)
+        self._w = (category_embedding_means.var(axis=0) ** 2)
+        #self._w = self._w  / np.sum(self._w)
+
+    def similarity(self, u):
         doc = self.documents[self.documents["Embedding"] == tuple(u)].iloc[0]
         docId = doc[self.args.idColumn].item()
+
+        assert(False)
         docAnnotations = self.participant[self.participant[self.args.idColumn] == docId]
         
         for idx, docAnnotation in docAnnotations.iterrows():
