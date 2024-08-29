@@ -110,94 +110,93 @@ group = emails.groupby(['Author', 'Style', 'Type'], as_index=False)['Embedding']
 random_sample = decisions["UserId"].unique()[150]
 mdf = decisions[decisions["UserId"] == random_sample]
 memails = emails[emails["EmailId"].isin(mdf["EmailId"].unique())]
-author = memails["Author"].unique()[0]
-style = memails["Style"].unique()[0]
 
 ax_index = 0
 grids = []
+for author in emails['Author'].unique():
+    for style in emails['Style'].unique():
+        hamAvg = group[(group['Author'] == author) & (group['Style'] == style) & (group['Type'] == 'ham')]['Embedding'].item()
+        phishAvg = group[(group['Author'] == author) & (group['Style'] == style) & (group['Type'] == 'phishing')]['Embedding'].item() 
 
-hamAvg = group[(group['Author'] == author) & (group['Style'] == style) & (group['Type'] == 'ham')]['Embedding'].item()
-phishAvg = group[(group['Author'] == author) & (group['Style'] == style) & (group['Type'] == 'phishing')]['Embedding'].item() 
+        cEmails = emails[(emails['Author'] == author) & (emails['Style'] == style)]
+        sims = []
+        
+        sColumns = ["Type", "Average", "Similarity"]
+        sdf = pd.DataFrame([], columns=sColumns)
 
-cEmails = emails[(emails['Author'] == author) & (emails['Style'] == style)]
-sims = []
+        qColumns = ["Type", "Ham Similarity", "Phishing Similarity"]
+        qdf = pd.DataFrame([], columns=qColumns)
 
-sColumns = ["Type", "Average", "Similarity"]
-sdf = pd.DataFrame([], columns=sColumns)
+        iblStudent.reset(True)
+        for cIdx, cEmail in memails.iterrows():
+            
+            dec = decisions[decisions["EmailId"] == cEmail["EmailId"]]
+            phish_confidence    = dec[dec['Decision'] == True]['Confidence'].sum()
+            ham_confidence      = dec[dec['Decision'] == False]['Confidence'].sum()
+            total_confidence    = phish_confidence + ham_confidence
+            ham_confidence      = ham_confidence / total_confidence
+            phish_confidence    = phish_confidence / total_confidence
 
-qColumns = ["Type", "Ham Similarity", "Phishing Similarity"]
-qdf = pd.DataFrame([], columns=qColumns)
+            ham_similarity      = dec[dec['Decision'] == False]['Confidence'].mean() / 4
+            phish_similarity    = dec[dec['Decision'] == True]['Confidence'].mean() / 4
 
-iblStudent.reset(True)
-for cIdx, cEmail in memails.iterrows():
-    dec = decisions[decisions["EmailId"] == cEmail["EmailId"]]
-    phish_confidence    = dec[dec['Decision'] == True]['Confidence'].sum()
-    ham_confidence      = dec[dec['Decision'] == False]['Confidence'].sum()
-    total_confidence    = phish_confidence + ham_confidence
-    ham_confidence      = ham_confidence / total_confidence
-    phish_confidence    = phish_confidence / total_confidence
+            dec = decisions[decisions["UserId"] == random_sample]
+            if(len(dec[dec["EmailId"] == cEmail["EmailId"]]['Decision']) != 1): continue 
+            dec = dec[dec["EmailId"] == cEmail["EmailId"]]['Decision'].item()
+            choices = get_choices(iblStudent, cEmail) 
+            
+            choice, details = iblStudent.choose(choices, details=True)
+            if(dec == True and choice['Decision'] == 'True' or dec == False and choice['Decision'] == 'False'):
+                iblStudent.respond(1)
+            else:
+                iblStudent.respond(-1)
 
-    ham_similarity      = dec[dec['Decision'] == False]['Confidence'].mean() / 4
-    phish_similarity    = dec[dec['Decision'] == True]['Confidence'].mean() / 4
+            if(details[0]['choice']['Decision'] == 'True'):
+                phishing_val = details[0]['blended_value']
+                ham_val = details[1]['blended_value']
+            else:
+                phishing_val = details[1]['blended_value']
+                ham_val = details[0]['blended_value']
 
-    dec = decisions[decisions["UserId"] == random_sample]
-    if(len(dec[dec["EmailId"] == cEmail["EmailId"]]['Decision']) != 1): continue 
-    dec = dec[dec["EmailId"] == cEmail["EmailId"]]['Decision'].item()
-    choices = get_choices(iblStudent, cEmail) 
-    
-    choice, details = iblStudent.choose(choices, details=True)
-    if(dec == True and choice['Decision'] == 'True' or dec == False and choice['Decision'] == 'False'):
-        iblStudent.respond(1)
-    else:
-        iblStudent.respond(-1)
+            hamSim = (ham_val) ** 200
+            phishSim = (phishing_val) ** 200
 
-    if(details[0]['choice']['Decision'] == 'True'):
-        phishing_val = details[0]['blended_value']
-        ham_val = details[1]['blended_value']
-    else:
-        phishing_val = details[1]['blended_value']
-        ham_val = details[0]['blended_value']
+            human_ham_similarity = (ham_confidence + ham_similarity) / 2
+            human_phish_similarity = (phish_confidence + phish_similarity) / 2
+            if(math.isnan(human_ham_similarity)):
+                human_ham_similarity = (1.3 - human_phish_similarity)
+            if(math.isnan(human_phish_similarity)):
+                human_phish_similarity = (1.3 - human_ham_similarity)
+            
+            q = pd.DataFrame([["Instance-Based " +  cEmail['Type'], human_ham_similarity, human_phish_similarity]], columns=qColumns)
+            qdf = pd.concat([qdf, q], ignore_index=True)
 
-    hamSim = (ham_val) ** 200
-    phishSim = (phishing_val) ** 200
+            #q = pd.DataFrame([["Human " + cEmail['Type'], human_ham_similarity, human_phish_similarity]], columns=qColumns)
 
-    human_ham_similarity = (ham_confidence + ham_similarity) / 2
-    human_phish_similarity = (phish_confidence + phish_similarity) / 2
-    if(math.isnan(human_ham_similarity)):
-        human_ham_similarity = (1.3 - human_phish_similarity)
-    if(math.isnan(human_phish_similarity)):
-        human_phish_similarity = (1.3 - human_ham_similarity)
-    
-    q = pd.DataFrame([["Instance-Based " +  cEmail['Type'], hamSim, phishSim]], columns=qColumns)
-    q = pd.DataFrame([["Human " + cEmail['Type'], human_ham_similarity, human_phish_similarity]], columns=qColumns)
-    qdf = pd.concat([qdf, q], ignore_index=True)
+        # After training the IBL model, get the student predictions of unseen emails:
+        for cIdx, cEmail in cEmails.iterrows():
+            if(len(dec[dec["EmailId"] == cEmail["EmailId"]]['Decision']) == 0): continue 
+            dec = dec[dec["EmailId"] == cEmail["EmailId"]]['Decision'].item()
+            choices = get_choices(iblStudent, cEmail) 
+            
+            choice, details = iblStudent.choose(choices, details=True)
+            if(dec == True and choice['Decision'] == 'True' or dec == False and choice['Decision'] == 'False'):
+                iblStudent.respond(1)
+            else:
+                iblStudent.respond(-1)
 
-    
-# After training the IBL model, get the student predictions of unseen emails:
-sample = cEmails.sample(n=25)
-for cIdx, cEmail in sample.iterrows():
-    if(len(dec[dec["EmailId"] == cEmail["EmailId"]]['Decision']) == 0): continue 
-    dec = dec[dec["EmailId"] == cEmail["EmailId"]]['Decision'].item()
-    choices = get_choices(iblStudent, cEmail) 
-    
-    choice, details = iblStudent.choose(choices, details=True)
-    if(dec == True and choice['Decision'] == 'True' or dec == False and choice['Decision'] == 'False'):
-        iblStudent.respond()
-    else:
-        iblStudent.respond()
+            if(details[0]['choice']['Decision'] == 'True'):
+                phishing_val = details[0]['blended_value']
+                ham_val = details[1]['blended_value']
+            else:
+                phishing_val = details[1]['blended_value']
+                ham_val = details[0]['blended_value']
 
-    if(details[0]['choice']['Decision'] == 'True'):
-        phishing_val = details[0]['blended_value']
-        ham_val = details[1]['blended_value']
-    else:
-        phishing_val = details[1]['blended_value']
-        ham_val = details[0]['blended_value']
+            hamSim = (ham_val) ** 200
+            phishSim = (phishing_val) ** 200
 
-    hamSim = (ham_val) ** 200
-    phishSim = (phishing_val) ** 200
-
-    q = pd.DataFrame([["Instance-Based " +  cEmail['Type'], hamSim, phishSim]], columns=qColumns)
-    qdf = pd.concat([qdf, q], ignore_index=True)
+            q = pd.DataFrame([["Instance-Based " +  cEmail['Type'], hamSim, phishSim]], columns=qColumns)
+            qdf = pd.concat([qdf, q], ignore_index=True)
 
 qdf = qdf.dropna()
 h = 0.02  # step size in the mesh

@@ -1,6 +1,7 @@
 from .human import Human 
 from .cosine import Cosine
 from .semantic import Semantic 
+from .ensemble import Ensemble
 from .ibis import IBIS
 from .custom import Custom
 """

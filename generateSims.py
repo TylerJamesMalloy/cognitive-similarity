@@ -27,7 +27,7 @@ import argparse
 import pandas as pd 
 import numpy as np 
 
-from Similarities import Cosine, Human, Semantic, IBIS, Custom 
+from Similarities import Cosine, Human, Semantic, Ensemble, IBIS, Custom
 
 class Embedding():
     def __init__(self, name) -> None:
@@ -61,8 +61,8 @@ if __name__ == '__main__':
                     help='Path to a pkl or csv file that contains the documents. Default is ./Database/Embeddings.pkl')
     parser.add_argument('-ef', '--embedding-file', dest='embeddingFile', action='store_true', default=True,
                     help='Flag for using a seperate embedding file, defaults to true.')
-    parser.add_argument('-sc', '--semantic-categories', dest='semanticCategories', type=str, default="",
-                    help='Flag for using a seperate embedding file, defaults to true.')
+    parser.add_argument('-sc', '--semantic-categories', dest='semanticCategories', type=str, default="Sender Mismatch,Request Credentials,Subject Suspicious,Urgent,Offer,Link Mismatch",
+                    help='A string of comma seperated categories for calculation of the semantic similarity, these must be ')
     
     # Annotations related arguments 
     parser.add_argument('-a', '--annotations', dest='annotations', type=str, default="./Database/Annotations.pkl",
@@ -77,8 +77,12 @@ if __name__ == '__main__':
                     help='Name of column in documents contains the type of the document. Defaults to Type.')
     parser.add_argument('-aco', '--annotation-column', dest='annotationColumn', type=str, default="Annotation",
                     help='Column of the Annotation database that contains the human participant annotation category. The values in this column must be one of the values in the annotationCategories argument. Default is to Annotation')
+    parser.add_argument('-rtc', '--reaction-time-cutoff', dest='reactionTimeCutoff', type=int, default=180000,
+                        help="Integer representing time in miliseconds to remove from the database, this can impact weighted and pruned cosine similarity metrics.")
+    parser.add_argument('-ws', '--weight-semantic', dest='weightSemantic', action='store_true', default=True,
+                    help='Determines if the weighted cosine will be used to weight the semantic in the case that the semantic categorizations are very sparse for one of the document annotation cattegories.')
     
-    # Results ourput related arguments
+    # Results output related arguments
     parser.add_argument('-oft', '--out-file-type', dest='outFileType', type=str, default="pickle",
                     help='Type of file to output calculations of similarities, should match the outFilePath. Defaults to pickle.')
     parser.add_argument('-ofp', '--out-file-path', dest='outFilePath', type=str, default="./Results/output.pkl",
@@ -116,7 +120,7 @@ if __name__ == '__main__':
     adf.loc[adf['Decision'] == 'true', 'Annotation'] = 'phishing'
     adf.loc[adf['Decision'] == 'false', 'Annotation'] = 'ham'
 
-    adf = adf[adf['ReactionTime'] < 180000]
+    adf = adf[adf['ReactionTime'] < args.reactionTimeCutoff]
 
     # TODO: If embeddings already exist in the dataframe we use those, otherwise we use an embedding object to calculate them. This is not yet implemented but would be a good feature for future use in comparing similarity metrics across different embedding methods. 
     model = Embedding(name="GPT-4o") 
@@ -150,6 +154,9 @@ if __name__ == '__main__':
     semantic = Semantic(name="semantic", 
                         categories=categories, 
                         args=args)                                      # A semantic similarity metric that uses additional columns defined in the dataframe to make judgements of similarity baesed on document semantic features. 
+    ensemble = Ensemble(name="ensemble", 
+                categories=categories, 
+                args=args)
     ibis = IBIS(name="ibis", 
                 categories=categories, 
                 args=args)                                              # The proposed instance-based individualized similarity metric. This is based on using an IBL cognitive model to predict individuals annotations of documents that are outside the dataframe. 
@@ -163,6 +170,7 @@ if __name__ == '__main__':
                    pruned, 
                    semantic, 
                    ibis, 
+                   ensemble,
                    custom]                                              # All possible default similarity metrics, additional custom metrics are added later. 
 
     metric_dict = {}                                                    # Dictonary to gather metrics by name later.
@@ -200,7 +208,7 @@ if __name__ == '__main__':
                 print("Unable to process similarity of document with index: ", didx, " with metric ", metric.name, " skipping and continuing") 
                 continue                                            # Failure to calculate the similarity outputs None, if this happens we skip this document. 
             if(any(v == 0 for v in o.values())):
-                # Todo: Add commantline argument to control whether or not to skip 0 similarity documents
+                # Todo: Add commandline argument to control whether or not to skip 0 similarity documents
                 continue 
             o["Similarity Metric"] = metric.name                    # Save the similarity metric name into the output file row.
             o["Document Id"] = did                                  # Save the document ID into the output file row.
@@ -210,46 +218,7 @@ if __name__ == '__main__':
             o = pd.DataFrame([o], columns=columns)                  # Turn the output row dictionariy into a pandas dataframe row.
             out = pd.concat([out, o], ignore_index=True)            # Add the newly created pandas dataframe row to the output dataframe.
         
-        print(out)
-
-        continue 
-        for participant in adf[args.participantColumn].unique():        # Iterrate through the participants in the annotation dataset.
-            if(args.individual):
-                ddf = ddf[ddf[args.participantColumn] == participant]
-                metric.set_documents(ddf)                               # Send all documents to the similarity metric object. 
-                metric.set_annotations(adf)                             # Send annotation information to the similarity metric object.
-            else:
-                metric.set_documents(ddf)                               # Send all documents to the similarity metric object. 
-                metric.set_annotations(adf)                             # Send annotation information to the similarity metric object.
-
-            pdf = adf[adf[args.participantColumn] == participant]       # Select only the annotations from the current participant.
-            metric.set_participant(pdf)                                 # Send individual annotations to the similarity metric object.
-            for idx, annotation in pdf.iterrows():                      # Iterate through rows of the documents being compared.
-                try:
-                    documentId = annotation[args.idColumn]              # Get the Id of the dicument in the current annotation. 
-                    docCol = ddf[ddf[args.idColumn] == documentId]      # Get the document column with the Id of the current annotation.
-                    doc = docCol[args.documentColumn].item()            # Get the document from that document column.
-                    docType = docCol[args.typeColumn].item()            # Get the type of the document in the current annotation
-                    if(args.documentType == "embedding"):               # Check to see if the document is already in embedding format
-                        doc = np.array(doc)                             # If so turn it into a numpy array for compution
-                    elif(args.documentType == "string"):                # If document is in stringformat, we will run the embedding model.
-                        doc = model(doc)                                # Get the embedding of the document from the embedding model.
-                    else:
-                        raise Exception('This document type is not supported, please select either "string" or "embedding"')
-                except Exception as e:
-                    print("Unable to process annotation with index: ", idx, " skipping and continuing")
-                    continue
-
-                o = metric.similarity(doc)                              # Calculate the metric of similarity between the document and all categories defined in the similarity metric. 
-                if(o is None):
-                    print("Unable to process similarity of document with index: ", idx, " skipping and continuing") 
-                    continue                                            # Failure to calculate the similarity outputs None, if this happens we skip this document. 
-                o["Similarity Metric"] = metric.name                    # Save the similarity metric name into the output file row
-                o["Document Id"] = annotation[args.idColumn]            # Save the document ID into the output file row
-                o["Document Type"] = docType                            # Save the document type into the output file row
-                o["Annotation"] = annotation[args.annotationColumn]     # Save the human annotation into the output file row
-                o = pd.DataFrame([o], columns=columns)                  # Turn the output row dictionariy into a pandas dataframe row
-                out = pd.concat([out, o], ignore_index=True)            # Add the newly created pandas dataframe row to the output dataframe
+        #print(out)
     
     if(len(metrics) > 2):                                               # If there are more than 2 metrics, we make a seperate output file comparing each metric and the 'comparison similarity' which is always human in the paper results but can be any metric. 
         for metric in metrics:                                          # Iterate through the metrics
@@ -271,177 +240,3 @@ if __name__ == '__main__':
             out.to_csv(args.outFilePath)
         else:
             raise Exception("Only pickle or csv file outputs are currently supported. Please select either a CSV or Pickle file.")
-        
-
-"""
-import matplotlib.pyplot as plt
-import numpy as np
-from matplotlib.colors import ListedColormap
-
-from sklearn.datasets import make_circles, make_classification, make_moons
-from sklearn.ensemble import GradientBoostingClassifier
-from sklearn.exceptions import ConvergenceWarning
-from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import GridSearchCV, train_test_split
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import KBinsDiscretizer, StandardScaler
-from sklearn.svm import SVC, LinearSVC
-from sklearn.utils._testing import ignore_warnings
-
-import pandas as pd 
-import numpy as np 
-import matplotlib.gridspec as gridspec
-import seaborn as sns; sns.set()
-import matplotlib.pyplot as plt 
-
-from scipy.spatial.distance import cosine
-from scipy import optimize
-import math
-import argparse 
-
-
-h = 0.02  # step size in the mesh
-
-
-def get_name(estimator):
-    name = estimator.__class__.__name__
-    if name == "Pipeline":
-        name = [get_name(est[1]) for est in estimator.steps]
-        name = " + ".join(name)
-    return name
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-                    prog='Cognitive Similarity',
-                    description='Calculate different metrics of similarity for documents and compare them to annotations from human participants.')
-    
-    # Main file arguments, produce differences in output for example database 
-    parser.add_argument('-d', '--data', dest='data', type=str, default="./Results/Figure1.pkl",
-                    help='Path to the database to print, must be either a .csv or .pkl file')
-    parser.add_argument('-dT', '--dataType', dest='dataType', type=str, default="./Results/Figure1.pkl",
-                    help='Path to the database to print, must be either a .csv or .pkl file')
-    
-    # Plotting arguments 
-    parser.add_argument('-s', '--show', dest='show', action='store_true', default=False,
-                    help='Flag to show the plot instead of just saving it to the plotting path.')
-    
-    df = pd.read_pickle("./Results/Figure1.pkl")
-
-    # list of (estimator, param_grid), where param_grid is used in GridSearchCV
-    # The parameter spaces in this example are limited to a narrow band to reduce
-    # its runtime. In a real use case, a broader search space for the algorithms
-    # should be used.
-    classifiers = [
-        (
-            make_pipeline(StandardScaler(), LogisticRegression(random_state=0)),
-            {"logisticregression__C": np.logspace(-1, 1, 3)},
-        )
-    ]
-
-    names = [get_name(e).replace("StandardScaler + ", "") for e, _ in classifiers]
-
-    n_samples = 100
-    similarities = np.array([df["ham"].to_numpy(), df["phishing"].to_numpy()]).T
-    catrgories = df["Document Type"].to_numpy() == "phishing"
-
-
-    datasets = [(similarities, catrgories)]
-
-    human_palette = [(0.2980392156862745, 0.4470588235294118, 0.6901960784313725), (0.8666666666666667, 0.5176470588235295, 0.3215686274509804)]
-    #human_palette = ["#178000", "#b30065"]
-    print(df)
-    g = sns.jointplot(data=df, x="ham", y="phishing", palette=human_palette, hue="Similarity Metric", xlim = (-0.1,1.1), ylim = (-0.1,1.1)).plot_joint(sns.kdeplot, zorder=5, n_levels=5)
-    g.figure.suptitle("Human Participant Similarity Judgements \n of Phishing and Ham Emails", fontsize=18)
-    g.ax_joint.collections[0].set_alpha(0.9)
-    g.figure.tight_layout()
-    g.figure.subplots_adjust(top=0.95) # Reduce plot to make room
-
-    g.ax_joint.set_xlabel("Human ham", fontsize=16)
-    g.ax_joint.set_ylabel("Human phishing", fontsize=16)
-
-    cm_piyg = sns.diverging_palette(20,220, as_cmap=True)
-    cm_bright = ListedColormap([(0.8666666666666667, 0.5176470588235295, 0.3215686274509804), (0.2980392156862745, 0.4470588235294118, 0.6901960784313725)])
-
-    # iterate over datasets
-    for ds_cnt, (X, y) in enumerate(datasets):
-        print(f"\ndataset {ds_cnt}\n---------")
-
-        # split into training and test part
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.5, random_state=42
-        )
-
-        # create the grid for background colors
-        x_min, x_max = X[:, 0].min() - 0.5, X[:, 0].max() + 0.5
-        y_min, y_max = X[:, 1].min() - 0.5, X[:, 1].max() + 0.5
-        xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.1), np.arange(y_min, y_max, 0.1))
-
-        # plot the dataset first
-        ax = g.ax_joint
-        # plot the training points
-        ax.scatter(X_train[:, 0], X_train[:, 1], c=y_train, cmap=cm_bright, edgecolors="k")
-        # and testing points
-        ax.scatter(
-            X_test[:, 0], X_test[:, 1], c=y_test, cmap=cm_bright, alpha=0.6, edgecolors="k"
-        )
-        ax.set_xlim(-0.1,1.1)
-        ax.set_ylim(-0.1,1.1)
-        #ax.set_xticks(())
-        #ax.set_yticks(())
-
-        # iterate over classifiers
-        for est_idx, (name, (estimator, param_grid)) in enumerate(zip(names, classifiers)):
-            ax = g.ax_joint
-
-            clf = GridSearchCV(estimator=estimator, param_grid=param_grid)
-            with ignore_warnings(category=ConvergenceWarning):
-                clf.fit(X_train, y_train)
-            score = clf.score(X_test, y_test)
-            print(f"{name}: {score:.2f}")
-
-            # plot the decision boundary. For that, we will assign a color to each
-            # point in the mesh [x_min, x_max]*[y_min, y_max].
-            if hasattr(clf, "decision_function"):
-                Z = clf.decision_function(np.column_stack([xx.ravel(), yy.ravel()]))
-            else:
-                Z = clf.predict_proba(np.column_stack([xx.ravel(), yy.ravel()]))[:, 1]
-
-            # put the result into a color plot
-            Z = Z.reshape(xx.shape)
-            ax.contourf(xx, yy, Z, cmap=cm_piyg, alpha=0.8)
-
-            # plot the training points
-            ax.scatter(
-                X_train[:, 0], X_train[:, 1], c=y_train, cmap=cm_bright, edgecolors="k"
-            )
-            # and testing points
-            ax.scatter(
-                X_test[:, 0],
-                X_test[:, 1],
-                c=y_test,
-                cmap=cm_bright,
-                edgecolors="k",
-                alpha=0.6,
-            )
-            ax.set_xlim(-0.1,1.1)
-            ax.set_ylim(-0.1,1.1)
-            #ax.set_xticks(())
-            #ax.set_yticks(())
-
-            ax.text(
-                0.95,
-                0.06,
-                (f"{score:.2f}").lstrip("0"),
-                size=15,
-                bbox=dict(boxstyle="round", alpha=0.8, facecolor="white"),
-                transform=ax.transAxes,
-                horizontalalignment="right",
-            )
-
-
-    plt.tight_layout()
-
-    # Add suptitles above the figure
-    plt.show()
-
-"""

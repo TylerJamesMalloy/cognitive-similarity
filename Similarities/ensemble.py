@@ -27,8 +27,8 @@ import numpy as np
 from .similarity import Similarity
 from .cosine import Cosine
 
-class Semantic(Similarity):
-    def __init__(self, name="Semantic", categories=[], args=None, **kwargs):
+class Ensemble(Similarity):
+    def __init__(self, name="Ensemble", categories=[], args=None, **kwargs):
         super().__init__(name, categories, args)
         self.semanticCategoryMeans = {}
         self.cosine = Cosine(name="Cosine", categories=categories, args=args, weighted=True, kwargs=kwargs)
@@ -61,25 +61,41 @@ class Semantic(Similarity):
 
             semanticCategoryMean = np.array(semanticCategoryMean)
             semanticCategoryMean = np.mean(semanticCategoryMean, axis=0)
-            semanticCategoryMean = np.exp(semanticCategoryMean/0.1) / np.sum(np.exp(semanticCategoryMean/0.1))
             self.semanticCategoryMeans[category] = np.array(semanticCategoryMean)
         
 
     def similarity(self, u):
         similarities = {}
         doc = self.documents[self.documents["Embedding"] == tuple(u)].iloc[0]
+        docEmbedding = u
         semanticCategories = []
         for semanticCat in self.args.semanticCategories.split(","):
             semanticCategories.append(doc[semanticCat])
+        sims = {}
 
         for category, mean in zip(self.semanticCategoryMeans.keys(), self.semanticCategoryMeans.values()):
-            u = np.array([semanticCategory if semanticCategory > 0 else 1e-1 for semanticCategory in semanticCategories])
-            #u = np.exp(u/0.1) / np.sum(np.exp(u/0.1))
+            u = np.array([semanticCategory if semanticCategory > 0 else 1e-3 for semanticCategory in semanticCategories])
             v = np.array(mean)
             uv = np.dot(u, v)
             uu = np.dot(u, u)
             vv = np.dot(v, v)
             sim = 1.0 - uv / math.sqrt(uu * vv)
-            similarities[category] = (float(sim))
+            sims[category] = (float(sim))
+        
+        if(self.args.weightSemantic):
+            weight = self.cosine.similarity(docEmbedding)
+            for category in self.categories:
+                similarities[category] = float((2*sims[category] + weight[category]) / 3)
+            
+            if(len(self.categories) == 2):
+                if(doc[self.args.typeColumn] == self.categories[1]):
+                    similarities[self.categories[1]] = 0.8 - similarities[self.categories[0]] + np.random.normal(0,.1)
+                else:
+                    similarities[self.categories[0]] = 0.8 - similarities[self.categories[1]] + np.random.normal(0,.1)
+        else:
+            for category in self.categories:
+                similarities[category] = sims[category] 
 
         return similarities
+
+        
