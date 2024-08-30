@@ -46,7 +46,7 @@ from scipy.spatial.distance import cosine
 from scipy import optimize
 import math
 import argparse 
-
+import copy 
 
 h = 0.02  # step size in the mesh
 
@@ -74,7 +74,9 @@ if __name__ == '__main__':
                     help='Flag to show the plot instead of just saving it to the plotting path.')
     parser.add_argument('-ofp', '--outPath', dest='outPath', type=str,  default="./Figures/Figure1.png",
                     help='Path to save the png output file to.')
-    
+    parser.add_argument('-ll', '--legendLoc', dest='legendLoc', type=str,  default="upper-right",
+                    help='Location to plot the legend. Options are upper-right, lower-right, center-right, and so on.') 
+
     # Classification arguments
     parser.add_argument('-c', '--classify', dest='classify', type=str,  default="human",
                     help='This similarity metric will be classified using all other similarity metrics in the dataframe, as is done in the paper.')
@@ -82,6 +84,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     df = pd.read_pickle(args.dataPath)
+    args.legendLoc = " ".join(args.legendLoc.split("-"))
 
     # list of (estimator, param_grid), where param_grid is used in GridSearchCV
     # The parameter spaces in this example are limited to a narrow band to reduce
@@ -129,13 +132,13 @@ if __name__ == '__main__':
     if(len(categories) == 2):
         for (classifier, classifier_df, classifier_similarity) in zip(classifiers, classifiers_dfs, classifiers_similarities):
             #palette = [(0.267, 0.675, 0.761), (0.929, 0.627, 0.322), (0.2980392156862745, 0.4470588235294118, 0.6901960784313725), (0.8666666666666667, 0.5176470588235295, 0.3215686274509804)]
-            palette = [(0.2980392156862745, 0.4470588235294118, 0.6901960784313725), (0.8666666666666667, 0.5176470588235295, 0.3215686274509804), (0.267, 0.675, 0.761), (0.929, 0.627, 0.322)]
+            palette = [(0.267, 0.675, 0.761), (0.929, 0.627, 0.322), (0.2980392156862745, 0.4470588235294118, 0.6901960784313725), (0.8666666666666667, 0.5176470588235295, 0.3215686274509804), ]
             g = sns.jointplot(data=df, x=categories[0], y=categories[1], palette=palette, hue="Type", xlim = (-0.1,1.1), ylim = (-0.1,1.1)).plot_joint(sns.kdeplot, zorder=5, n_levels=5)
                 #sns.move_legend(g.figure, "lower left")
             
             n_samples = 100
 
-            g.figure.suptitle("Human Participant Similarity Judgements \n of Phishing and Ham Emails", fontsize=18)
+            g.figure.suptitle("Human Participant and IBIS Similarity \n of Phishing and Ham Emails", fontsize=18)
             g.ax_joint.collections[0].set_alpha(0.9)
             g.figure.tight_layout()
             g.figure.subplots_adjust(top=0.95) # Reduce plot to make room
@@ -157,6 +160,7 @@ if __name__ == '__main__':
             
             cm_piyg = sns.diverging_palette(20,220, as_cmap=True)
             cm_bright = ListedColormap([(0.8666666666666667, 0.5176470588235295, 0.3215686274509804), (0.2980392156862745, 0.4470588235294118, 0.6901960784313725)])
+            cm_brighter = ListedColormap([(0.929, 0.627, 0.322), (0.267, 0.675, 0.761)])
 
             # create the grid for background colors
             x_min, x_max = X[:, 0].min() - 0.5, X[:, 0].max() + 0.5
@@ -166,7 +170,7 @@ if __name__ == '__main__':
             # plot the dataset first
             ax = g.ax_joint
             # plot the training points
-            ax.scatter(X_train[:, 0], X_train[:, 1], c=y_train, cmap=cm_bright, edgecolors="k")
+            ax.scatter(X_train[:, 0], X_train[:, 1], c=y_train, cmap=cm_brighter, edgecolors="k")
             # and testing points
             ax.scatter(
                 X_test[:, 0], X_test[:, 1], c=y_test, cmap=cm_bright, alpha=0.6, edgecolors="k"
@@ -205,7 +209,7 @@ if __name__ == '__main__':
 
             # plot the training points
             ax.scatter(
-                X_train[:, 0], X_train[:, 1], c=y_train, cmap=cm_bright, edgecolors="k"
+                X_train[:, 0], X_train[:, 1], c=y_train, cmap=cm_brighter, edgecolors="k"
             )
             # and testing points
             ax.scatter(
@@ -234,7 +238,7 @@ if __name__ == '__main__':
 
             plt.tight_layout()
             #plt.legend(loc='lower left')
-            plt.legend(loc='upper right')
+            plt.legend(loc=args.legendLoc)
 
             if(args.show):
                 plt.show()

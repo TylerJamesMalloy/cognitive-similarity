@@ -26,6 +26,7 @@ import argparse
 
 import pandas as pd 
 import numpy as np 
+from tqdm import tqdm
 
 from Similarities import Cosine, Human, Semantic, Ensemble, IBIS, Custom
 
@@ -188,11 +189,12 @@ if __name__ == '__main__':
     
     if(len(metrics) == 0):                                              # There must be at least one similarity in the list. 
         raise Exception("No similarity metrics found, the default options are [human,cosine,weighted,pruned,semantic,ibis,custom], note that these are case sensative. If you are adding a custom similarity metric ensure that it is properly added to the __init__.py file import.")
-    
+
+
     for metric in metrics:                                              # Iterrate through all similarity metrics selected 
         metric.set_documents(ddf)
         metric.set_annotations(adf)
-        for didx, did in enumerate(ddf[args.idColumn].unique()):
+        for didx, did in tqdm(enumerate(ddf[args.idColumn].unique())):
             docCol = ddf[ddf[args.idColumn] == did]
             doc = docCol[args.documentColumn].item()            # Get the document from that document column.
             docType = docCol[args.typeColumn].item()            # Get the type of the document in the current annotation
