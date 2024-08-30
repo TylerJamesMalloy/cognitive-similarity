@@ -1,7 +1,7 @@
 """
 MIT License
 
-Copyright (c) 2024 Tyler Malloy, Cleotilde Gonzalez Dynamic Decision Making Labratory, Carnegie Mellon University
+Copyright (c) (Removed for anonymous submission)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

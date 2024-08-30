@@ -1,7 +1,7 @@
 """
 MIT License
 
-Copyright (c) 2024 Tyler Malloy, Cleotilde Gonzalez Dynamic Decision Making Labratory, Carnegie Mellon University
+Copyright (c) (Removed for anonymous submission)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -36,11 +36,7 @@ class Semantic(Similarity):
     def set_documents(self, documents):
         self.cosine.set_documents(documents)
         return super().set_documents(documents)
-    """
-    This similarity metric assumes that the annotation dataframe contains information 
-    on the annotation confidence and reaction time. If these are not present then 
-    this similarity will default to include whatever information is available. 
-    """
+    
     def set_annotations(self, annotations):
         super().set_annotations(annotations)
         self.cosine.set_annotations(annotations)
