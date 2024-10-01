@@ -5,8 +5,8 @@ python .\generateSims.py -s human,pruned  -ofp ./Results/Figure4.pkl
 python .\generateSims.py -s human,ensemble -ofp ./Results/Figure5.pkl
 python .\generateSims.py -s human,ibis -ofp ./Results/Figure6.pkl
 
-python .\generatePlots.py  -dp ./Results/Figure1.pkl -ofp ./Figures/Figure1.png
-python .\generatePlots.py  -dp ./Results/Figure2.pkl -ofp ./Figures/Figure2.png
+python .\generatePlots.py  -dp ./Results/Figure1.pkl -ofp ./Figures/Figure1.png -ll center-right
+python .\generatePlots.py  -dp ./Results/Figure2.pkl -ofp ./Figures/Figure2.png -ll center-right
 python .\generatePlots.py  -dp ./Results/Figure3.pkl -ofp ./Figures/Figure3.png
 python .\generatePlots.py  -dp ./Results/Figure4.pkl -ofp ./Figures/Figure4.png
 python .\generatePlots.py  -dp ./Results/Figure5.pkl -ofp ./Figures/Figure5.png
