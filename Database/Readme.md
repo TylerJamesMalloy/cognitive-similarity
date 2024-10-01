@@ -92,7 +92,7 @@ What might a phishing email request of you to compromise your Identity?
     1: Sensitive information like credit card numbers. <---- Correct Response
     2: Sensitive information like your celebrity crush.
     3: Irrelevant information like your dog's name
-
+ 
 ### Q2
 What types of actions might phishing emails request from you that would lead to malware being installed on your computer
     0: Clicking links only.
