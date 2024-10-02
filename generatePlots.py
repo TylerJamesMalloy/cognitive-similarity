@@ -84,12 +84,14 @@ if __name__ == '__main__':
                     help='This similarity metric will be classified using all other similarity metrics in the dataframe, as is done in the paper.')
     
     args = parser.parse_args()
+    adf = pd.read_pickle("./Database/Annotations.pkl")
 
     df = pd.read_pickle(args.dataPath)
     args.legendLoc = " ".join(args.legendLoc.split("-"))
     if(args.participant != 'all'):
         if(args.participant == 'random'):
-            id = np.random(0,len(df['UserId'].unique()))
+            adf = adf[adf['UserId'] == adf['UserId'].unique()[20]]
+            df = df[df['Document Id'].isin(adf['EmailId'].unique())]
 
     # list of (estimator, param_grid), where param_grid is used in GridSearchCV
     # The parameter spaces in this example are limited to a narrow band to reduce
@@ -164,7 +166,10 @@ if __name__ == '__main__':
         n_samples = 100
 
         if(len(list(df['Similarity Metric'].unique())) > 1):
-            g.figure.suptitle("Human Participant and " + classifier.capitalize() + " Similarity \n of Phishing and Ham Emails", fontsize=18)
+            if(args.participant == 'random'):
+                g.figure.suptitle("Individual Participant and " + classifier.capitalize() + " Similarity \n of Phishing and Ham Emails", fontsize=18)
+            else:
+                g.figure.suptitle("Human Participant and " + classifier.capitalize() + " Similarity \n of Phishing and Ham Emails", fontsize=18)
         else:
             g.figure.suptitle("Human Participant Similarity \n of Phishing and Ham Emails", fontsize=18)
 

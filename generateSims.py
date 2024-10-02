@@ -190,10 +190,10 @@ if __name__ == '__main__':
     if(len(metrics) == 0):                                              # There must be at least one similarity in the list. 
         raise Exception("No similarity metrics found, the default options are [human,cosine,weighted,pruned,semantic,ibis,custom], note that these are case sensative. If you are adding a custom similarity metric ensure that it is properly added to the __init__.py file import.")
 
-    if(args.individual):
+    """if(args.individual):
         # adf.sample(n=1, random_state=123)['UserId'].item()
         adf = adf[adf['UserId'] == adf['UserId'].unique()[20]]
-        ddf = ddf[ddf['EmailId'].isin(adf['EmailId'].unique())]
+        ddf = ddf[ddf['EmailId'].isin(adf['EmailId'].unique())]"""
 
     for metric in metrics:                                              # Iterrate through all similarity metrics selected 
         metric.set_documents(ddf)

@@ -17,4 +17,6 @@ python .\generatePlots.py  -dp ./Results/Figure4.pkl -ofp ./Figures/Figure4.png
 python .\generatePlots.py  -dp ./Results/Figure5.pkl -ofp ./Figures/Figure5.png
 python .\generatePlots.py  -dp ./Results/Figure6.pkl -ofp ./Figures/Figure6.png
 
-python .\generatePlots.py  -dp ./Results/Figure7a.pkl -ofp ./Figures/Figure7a.png 
+python .\generatePlots.py  -dp ./Results/Figure4.pkl -ofp ./Figures/Figure7a.png -p random
+python .\generatePlots.py  -dp ./Results/Figure5.pkl -ofp ./Figures/Figure7b.png -p random
+python .\generatePlots.py  -dp ./Results/Figure6.pkl -ofp ./Figures/Figure7c.png -p random
