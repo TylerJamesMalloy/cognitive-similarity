@@ -1,4 +1,4 @@
-# Codebase for submission to Conference on Natural Language Learning (CoNLL) 2024 paper "Leveraging a Cognitive Model to Measure Subjective Similarity of Human and GPT-4 Written Content"
+# Codebase for Conference on Natural Language Learning (CoNLL) 2024 paper "Leveraging a Cognitive Model to Measure Subjective Similarity of Human and GPT-4 Written Content"
 
 # Main file (generateSims.py)
 To recreate all experiment data, run the generate.bat file which will re-run all comparisons of similarity metrics, save this data in the "./Results" folder, and generate the resulting figures and statistical analysis using the files in the "./Plotting" folder to save figures in the "./Figures" folder. 
