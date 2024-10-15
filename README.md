@@ -16,30 +16,32 @@ usage: Cognitive Similarity [-h] [-s SIMILARITIES] [-i] [-d DOCUMENT] [-dc DOCUM
 Calculate different metrics of similarity for documents and compare them to annotations from human participants.
 
 options:
+
   -h, --help            show this help message and exit
-  -s SIMILARITIES, --similarities SIMILARITIES
-                        Comma seperated string list of similarities to compare. Default is ibis,human
+  
+  -s SIMILARITIES, --similarities SIMILARITIES Comma seperated string list of similarities to compare. Default is ibis,human
+  
   -i, --individual      Flag for comparing similarity metrics based on all participants individually instead of all at once which is default.
-  -d DOCUMENT, --documents DOCUMENT
-                        Path to a pkl or csv file that contains the documents. Default is ./Data/Emails.pkl
-  -dc DOCUMENTCOLUMN, --document-column DOCUMENTCOLUMN
-                        Column of the document information within the document pkl or csv file. Default is Embedding
-  -dt DOCUMENTTYPE, --document-type DOCUMENTTYPE
-                        A string description of the document type, either "String" or "Embedding". Default is Embedding
-  -a ANNOTATIONS, --annotations ANNOTATIONS
-                        Path to a pkl or csv file that contains the annotations from human participants. Default is ./Data/Annotations.pkl.       
-  -ac ANNOTATIONCATEGORIES, --annotation-categories ANNOTATIONCATEGORIES
-                        A list of the categories of annotations. Default is ham,phishing
-  -pc PARTICIPANTCOLUMN, --participant-column PARTICIPANTCOLUMN
-                        Column of the participant ID within the document pkl or csv file. Defaults to UserId.
-  -idc IDCOLUMN, --id-column IDCOLUMN
-                        Column of the document ID within the annotations pkl or csv file. Defaults to EmailId.
-  -tc TYPECOLUMN, --type-column TYPECOLUMN
-                        Name of column in documents contains the type of the document. Defaults to Type.
-  -oft OUTFILETYPE, --out-file-type OUTFILETYPE
-                        Type of file to output calculations of similarities, should match the outFilePath. Defaults to pickle.
-  -ofp OUTFILEPATH, --out-file-path OUTFILEPATH
-                        Name of file to output calculations of similarities, should match the outFileType. Defaults to ./output.pkl.
+  
+  -d DOCUMENT, --documents DOCUMENT Path to a pkl or csv file that contains the documents. Default is ./Data/Emails.pkl
+  
+  -dc DOCUMENTCOLUMN, --document-column DOCUMENTCOLUMN Column of the document information within the document pkl or csv file. Default is Embedding
+  
+  -dt DOCUMENTTYPE, --document-type DOCUMENTTYPE  A string description of the document type, either "String" or "Embedding". Default is Embedding
+  
+  -a ANNOTATIONS, --annotations ANNOTATIONS Path to a pkl or csv file that contains the annotations from human participants. Default is ./Data/Annotations.pkl. 
+  
+  -ac ANNOTATIONCATEGORIES, --annotation-categories ANNOTATIONCATEGORIES  A list of the categories of annotations. Default is ham,phishing
+  
+  -pc PARTICIPANTCOLUMN, --participant-column PARTICIPANTCOLUMN Column of the participant ID within the document pkl or csv file. Defaults to UserId.
+  
+  -idc IDCOLUMN, --id-column IDCOLUMN Column of the document ID within the annotations pkl or csv file. Defaults to EmailId.
+  
+  -tc TYPECOLUMN, --type-column TYPECOLUMN Name of column in documents contains the type of the document. Defaults to Type.
+  
+  -oft OUTFILETYPE, --out-file-type OUTFILETYPE Type of file to output calculations of similarities, should match the outFilePath. Defaults to pickle.
+  
+  -ofp OUTFILEPATH, --out-file-path OUTFILEPATH  Name of file to output calculations of similarities, should match the outFileType. Defaults to ./output.pkl.
 
 This databases is structured around the generateSims.py file which reads annotations from the ./Database folder, entered in as command line arguments, and generates comparison data that is saved in the ./Results folder, which is turned into figures by running python scripts contained in the ./Plotting folder and saves as images in the ./Figures folder. These folders and their contents are detailed more fully below. 
 
